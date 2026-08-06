@@ -22,16 +22,23 @@ def main():
         help="Override device configuration",
     )
     parser.add_argument("--metrics", action="store_true", help="Print quality metrics")
+    parser.add_argument(
+        "--reference", type=str, default=None,
+        help="Path to clean ground-truth image for full-reference metrics (PSNR/SSIM/LPIPS)"
+    )
 
     args = parser.parse_args()
 
     input_path = Path(args.input)
     output_path = Path(args.output)
 
+    # Update global config before initializing pipeline
+    from src.core.config import get_config
+    if args.device:
+        get_config().pipeline.device = args.device
+
     # Initialize pipeline
     pipeline = RestorationPipeline()
-    if args.device:
-        pipeline.config.pipeline.device = args.device
 
     if not input_path.exists():
         logger.error(f"Input path does not exist: {input_path}")
@@ -47,7 +54,7 @@ def main():
         output_file.parent.mkdir(parents=True, exist_ok=True)
 
         try:
-            results = pipeline.process_image(input_path, output_file)
+            results = pipeline.process_image(input_path, output_file, reference_path=args.reference)
             if args.metrics:
                 print(json.dumps(results, indent=2))
             else:
@@ -69,7 +76,7 @@ def main():
                 total_count += 1
                 out_file = output_path / f"restored_{file.name}"
                 try:
-                    results = pipeline.process_image(file, out_file)
+                    results = pipeline.process_image(file, out_file, reference_path=args.reference)
                     if args.metrics:
                         print(f"{file.name}: {results['metrics']}")
                     success_count += 1

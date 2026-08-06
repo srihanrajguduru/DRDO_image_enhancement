@@ -71,19 +71,19 @@ class DehazeFormerWrapper(BaseModel):
         if not self.is_loaded:
             self.load()
 
-        # DehazeFormer expects input in range [-1, 1]
-        image_norm = image.to(self.sys_config.device) * 2.0 - 1.0
+        # DehazeFormer checkpoints are trained with normalized inputs in [-1, 1].
+        # Convert from pipeline range [0, 1] -> [-1, 1], then map output back.
+        image_input = image.to(self.sys_config.device)
+        image_input = image_input * 2.0 - 1.0
         
         # Run inference with autocast
         out = infer_with_autocast(
             self.model,
-            image_norm,
+            image_input,
             precision=self.sys_config.precision,
             device=self.sys_config.device,
         )
         
-        # Convert output back from [-1, 1] to [0, 1]
-        out = torch.clamp(out, -1, 1)
-        out = out * 0.5 + 0.5
-        
-        return out
+        # Map model output [-1, 1] back to pipeline range [0, 1].
+        out = (out + 1.0) * 0.5
+        return torch.clamp(out, 0, 1)

@@ -1,30 +1,23 @@
 import yaml
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
-
-
-class AppConfig(BaseModel):
-    name: str = "Image Restoration AI"
-    version: str = "1.0.0"
-    debug: bool = False
-    host: str = "0.0.0.0"
-    port: int = 8000
+from pathlib import Path
 
 
 class PipelineConfig(BaseModel):
     device: str = "cuda"
-    precision: str = "fp16"
-    compile_models: bool = True
-    enable_tensorrt: bool = False
-    batch_size: int = 1
-    max_workers: int = 4
+    precision: str = "fp32"
+    compile_models: bool = False
+    self_ensemble: bool = False
+    lowlight_denoise: bool = False  # When False, skip Restormer denoising stage
 
 
 class RouterConfig(BaseModel):
-    haze_threshold: float = 0.5
-    lowlight_threshold: float = 0.5
-    rain_threshold: float = 0.5
+    haze_threshold: float = 0.45
+    lowlight_threshold: float = 0.50
+    rain_threshold: float = 0.45
     execution_order: List[str] = ["lowlight", "rain", "haze"]
+    detector_type: str = "learned"  # "heuristic" or "learned"
 
 
 class LoggingConfig(BaseModel):
@@ -34,7 +27,6 @@ class LoggingConfig(BaseModel):
 
 
 class SystemConfig(BaseModel):
-    app: AppConfig
     pipeline: PipelineConfig
     router: RouterConfig
     logging: LoggingConfig
@@ -49,11 +41,10 @@ class ModelParams(BaseModel):
 
 class ModelsRegistryConfig(BaseModel):
     dehazeformer: ModelParams
-    zero_dce: ModelParams
+    retinexformer: ModelParams
     restormer: ModelParams
+    restormer_denoise: ModelParams
 
-
-from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
@@ -75,7 +66,7 @@ def load_models_config(
         data = yaml.safe_load(f)
     config = ModelsRegistryConfig(**data)
     # Resolve all checkpoint paths to absolute paths
-    for model_cfg in [config.dehazeformer, config.zero_dce, config.restormer]:
+    for model_cfg in [config.dehazeformer, config.retinexformer, config.restormer, config.restormer_denoise]:
         model_cfg.checkpoint_path = str(PROJECT_ROOT / model_cfg.checkpoint_path)
     return config
 

@@ -1,23 +1,16 @@
-app:
-  name: "Image Restoration AI"
-  version: "1.0.0"
-  debug: false
-  host: "0.0.0.0"
-  port: 8000
-
 pipeline:
   device: "cuda"  # cuda, cpu, mps
-  precision: "fp16" # fp32, fp16, bf16
+  precision: "fp32"  # fp32, fp16, bf16
   compile_models: false
-  enable_tensorrt: false
-  batch_size: 1
-  max_workers: 4
+  self_ensemble: false  # Enable TTA (8x slower but +0.1-0.5 dB PSNR)
+  lowlight_denoise: false  # Skip Restormer denoising after RetinexFormer (improves PSNR)
 
 router:
-  haze_threshold: 0.22
-  lowlight_threshold: 0.80
-  rain_threshold: 0.22
+  haze_threshold: 0.45
+  lowlight_threshold: 0.50
+  rain_threshold: 0.45
   execution_order: ["lowlight", "rain", "haze"]
+  detector_type: "learned"  # "heuristic" (classical CV) or "learned" (MobileNetV2 CNN)
 
 logging:
   level: "INFO"

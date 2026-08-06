@@ -3,11 +3,13 @@ from src.detectors.base import BaseDetector
 from src.detectors.haze import HazeDetector
 from src.detectors.lowlight import LowLightDetector
 from src.detectors.rain import RainDetector
+from src.detectors.learned import LearnedDetector
 
 from src.models.base import BaseModel
 from src.models.dehaze import DehazeFormerWrapper
-from src.models.lowlight import ZeroDCEWrapper
+from src.models.lowlight_retinexformer import TwoStageLowLightWrapper
 from src.models.derain import RestormerWrapper
+from src.core.config import get_config
 
 
 class ModelRegistry:
@@ -19,11 +21,17 @@ class ModelRegistry:
 
     def get_detectors(self) -> Dict[str, BaseDetector]:
         if not self._detectors:
-            self._detectors = {
-                "haze": HazeDetector(),
-                "lowlight": LowLightDetector(),
-                "rain": RainDetector(),
-            }
+            detector_type = get_config().router.detector_type
+            if detector_type == "learned":
+                self._detectors = {
+                    "learned": LearnedDetector(),
+                }
+            else:
+                self._detectors = {
+                    "haze": HazeDetector(),
+                    "lowlight": LowLightDetector(),
+                    "rain": RainDetector(),
+                }
         return self._detectors
 
     def get_model(self, name: str) -> BaseModel:
@@ -31,13 +39,12 @@ class ModelRegistry:
             if name == "haze":
                 self._models[name] = DehazeFormerWrapper()
             elif name == "lowlight":
-                self._models[name] = ZeroDCEWrapper()
+                self._models[name] = TwoStageLowLightWrapper()
             elif name == "rain":
                 self._models[name] = RestormerWrapper()
             else:
                 raise ValueError(f"Unknown model name: {name}")
 
-        # Lazy loading happens inside the model wrapper's restore() method
         return self._models[name]
 
     def unload_all(self):

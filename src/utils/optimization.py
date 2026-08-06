@@ -10,15 +10,21 @@ def optimize_model(
     precision: str = "fp16",
     compile_model: bool = True,
 ) -> nn.Module:
-    """Applies inference optimizations to a PyTorch model."""
+    """
+    Applies inference optimizations to a PyTorch model.
+
+    Precision is intentionally NOT handled here anymore. It's applied only
+    via torch.autocast inside infer_with_autocast() at call time. Calling
+    model.half()/.bfloat16() here as well as wrapping calls in autocast
+    double-applies precision reduction: autocast is designed to keep
+    numerically sensitive ops (LayerNorm and similar per-instance
+    normalization layers) in fp32 while the model's stored weights stay
+    fp32 -- pre-casting the weights here removes that safety net and can
+    introduce the exact kind of instability autocast exists to avoid.
+    """
 
     model = model.to(device)
     model.eval()
-
-    if precision == "fp16":
-        model = model.half()
-    elif precision == "bf16":
-        model = model.bfloat16()
 
     if compile_model and hasattr(torch, "compile"):
         try:
@@ -40,19 +46,26 @@ def infer_with_autocast(
     device: str = "cuda",
 ) -> torch.Tensor:
     """Runs inference with automatic mixed precision."""
-    dtype = (
-        torch.float16
-        if precision == "fp16"
-        else torch.bfloat16 if precision == "bf16" else torch.float32
-    )
     device_type = "cuda" if "cuda" in device else "cpu"
 
     with torch.no_grad():
-        with torch.autocast(
-            device_type=device_type, dtype=dtype, enabled=precision != "fp32"
-        ):
-            outputs = model(inputs)
-    return outputs
+        if precision == "fp32":
+            # Run in full precision
+            inputs_fp32 = inputs.float()
+            outputs = model(inputs_fp32)
+        else:
+            dtype = (
+                torch.float16
+                if precision == "fp16"
+                else torch.bfloat16 if precision == "bf16" else torch.float32
+            )
+            with torch.autocast(
+                device_type=device_type, dtype=dtype, enabled=True
+            ):
+                outputs = model(inputs)
+
+    # Always return float32 output for downstream processing
+    return outputs.float()
 
 
 def profile_inference(

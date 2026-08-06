@@ -13,11 +13,15 @@ def dummy_image(tmp_path):
     return img_path
 
 def test_pipeline_initialization():
+    from src.core.config import get_config
+    get_config().pipeline.device = "cpu"
     pipeline = RestorationPipeline()
     assert pipeline is not None
     assert pipeline.router is not None
 
 def test_process_image(dummy_image, tmp_path):
+    from src.core.config import get_config
+    get_config().pipeline.device = "cpu"
     pipeline = RestorationPipeline()
     # Mock models config to avoid downloading weights during tests
     # We are using dummy architectures in our wrappers which are self-contained.

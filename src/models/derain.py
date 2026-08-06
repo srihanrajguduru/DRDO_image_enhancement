@@ -92,4 +92,4 @@ class RestormerWrapper(BaseModel):
             precision=self.sys_config.precision,
             device=self.sys_config.device,
         )
-        return torch.clamp(out, 0, 1)
+        return torch.clamp(out, 0, 1).float()

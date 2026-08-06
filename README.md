@@ -1,87 +1,182 @@
 # Image Restoration AI System
 
-A complete, production-ready AI system that automatically restores images suffering from haze, low-light, and motion blur using state-of-the-art models and CUDA acceleration.
+An intelligent image restoration pipeline that **automatically detects and fixes** three types of visual degradation — **haze, low-light, and rain** — using state-of-the-art Transformer neural networks.
+
+The system uses a trained lightweight MobileNetV2 CNN classifier (or classical CV detectors) to analyze an input image, determines which degradations are present with 99.9% accuracy, and routes it through the appropriate deep learning models — all without manual intervention.
+
+---
 
 ## Features
-- **Automatic Degradation Detection**: Classical detectors (Dark Channel Prior, LAB Luminance, FFT Variance) automatically determine if an image suffers from haze, low-light, or blur.
-- **Dynamic Routing**: Only the necessary pretrained models are executed based on the detected degradations.
-- **State-of-the-Art Models**:
-  - Haze: DehazeFormer
-  - Low-Light: Zero-DCE++
-  - Blur/Rain: Restormer / NAFNet
-- **Optimized Inference**: FP16 autocasting, `torch.compile`, and efficient VRAM management (lazy loading).
-- **Comprehensive API**: FastAPI server for RESTful inference.
-- **CLI Interface**: Process single images or entire folders effortlessly.
-- **Quality Metrics**: Built-in PSNR, SSIM, LPIPS, and BRISQUE evaluation.
 
-## Installation (Windows / CUDA 12.1)
+| Feature | Description |
+|---------|-------------|
+| **Auto-Detection** | CNN Learned Detector (MobileNetV2) & Classical detectors (Dark Channel Prior, LAB luminance, Streak analysis) |
+| **Smart Routing** | Mutual-exclusion router prevents false positives (e.g. vertical haze textures triggering deraining) |
+| **SOTA Models** | DehazeFormer (IEEE TIP 2023), RetinexFormer (ICCV 2023), Restormer (CVPR 2022) |
+| **Optimized Inference** | FP16 autocasting, `torch.compile`, lazy model loading, self-ensemble TTA |
+| **CLI Interface** | Process single images or entire folders from the command line |
+| **Quality Metrics** | Built-in PSNR, SSIM, LPIPS, and BRISQUE evaluation |
+| **Benchmarking** | Evaluate model quality against ground-truth datasets |
 
-We recommend using Conda to set up the environment, especially on Windows, to ensure seamless compatibility with NVIDIA CUDA libraries.
+---
+
+## Benchmark Results (RTX 4050 Laptop GPU)
+
+| Model | Dataset | Avg PSNR | Paper PSNR | Avg SSIM | Speed |
+|-------|---------|----------|-----------|----------|-------|
+| DehazeFormer-B | SOTS Indoor (100 images) | **38.31 dB** | 40.19 dB | 0.9906 | 0.84s/img |
+| Restormer | Rain100L (100 images) | **37.47 dB** | 38.99 dB | 0.9740 | 1.07s/img |
+| RetinexFormer (Single-Stage) | LOL-v2-Real (100 images) | **22.84 dB** | 27.18 dB | 0.8536 | 0.95s/img |
+
+---
+
+## Installation
+
+### Prerequisites
+- Python 3.11+
+- NVIDIA GPU with CUDA 12.1+ (recommended) or CPU
+- ~1 GB disk space for model weights
+
+### Setup
 
 ```bash
 # 1. Clone the repository
 git clone https://github.com/srihanrajguduru/Image_enhancement_project.git
 cd Image_enhancement_project
 
-# 2. Create a local Conda environment with Python 3.11
+# 2. Create a Conda environment
 conda create --prefix ./env python=3.11 -y
-
-# 3. Activate the environment
 conda activate ./env
 
-# 4. Install CUDA-enabled PyTorch
+# 3. Install CUDA-enabled PyTorch
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
-# 5. Install the remaining project requirements
+# 4. Install project dependencies
 pip install -r requirements.txt
 ```
 
-> **Note for PowerShell users**: If `conda activate .\env` fails to activate properly, you can bypass the activation step and use the Python executable directly: `.\env\python.exe` instead of `python`.
+> **PowerShell users**: If `conda activate ./env` fails, use `.\env\python.exe` directly.
 
-## Downloading Checkpoints
+### Download Model Weights
 
-Before running inference, you must download the pre-trained model weights (`.pth` files) and place them in the `weights/` directory. Check `configs/models.yaml` for specific file names and URLs.
+Place pre-trained checkpoints in the `weights/` directory:
 
-- Example: `weights/deraining.pth`
-- Example: `weights/dehazeformer-b.pth`
-- Example: `weights/Epoch99.pth`
+| Weight File | Model | Size | Download / Source |
+|-------------|-------|------|-------------------|
+| `detector.pth` | MobileNetV2 Degradation Classifier | 14 MB | Included / Trained |
+| `dehazeformer-b.pth` | DehazeFormer-B | 11 MB | [DehazeFormer releases](https://github.com/IDKiro/DehazeFormer) |
+| `LOL_v2_real.pth` | RetinexFormer | 6 MB | [RetinexFormer releases](https://github.com/caiyuanhao1998/Retinexformer) |
+| `deraining.pth` | Restormer (deraining) | 100 MB | [Download](https://github.com/swz30/Restormer/releases/download/v1.0/deraining.pth) |
+| `real_denoising.pth` | Restormer (denoising) | 100 MB | [Download](https://github.com/swz30/Restormer/releases/download/v1.0/real_denoising.pth) |
+
+---
 
 ## Usage
 
-### CLI (Command Line Interface)
-
-Process a single image or an entire folder of images.
+### CLI — Single Image
 
 ```bash
-# Process a single image (with metrics)
-python -m src.cli.restore images/norain-105x2.png --output output_dir/restored.png --metrics
+# Basic restoration (auto-detects degradation)
+python -m src.cli.restore images/input/hazy_photo.jpg --output output/restored.png
 
-# Process an entire folder
-python -m src.cli.restore images/ --output output_dir/
+# With quality metrics against ground truth
+python -m src.cli.restore images/input/hazy_photo.jpg --output output/restored.png \
+  --reference images/reference/clean.png --metrics
+
+# Force CPU
+python -m src.cli.restore images/input/hazy_photo.jpg --output output/restored.png --device cpu
 ```
 
-### API Server
+### CLI — Batch Processing
 
-Start the FastAPI server for RESTful inference:
 ```bash
-uvicorn src.api.app:app --host 0.0.0.0 --port 8000
+# Process all images in a folder
+python -m src.cli.restore images/input/ --output output/
 ```
-API Documentation will be available at `http://localhost:8000/docs`.
 
 ### Benchmarking
-Evaluate the model against a dataset:
+
 ```bash
-python scripts/benchmark.py --input images/ --output results.csv
+# Run benchmark with ground-truth references
+python scripts/benchmark.py \
+  --input images/haze_test/hazy/ \
+  --reference images/haze_test/clear/ \
+  --output output/benchmark_results.csv
 ```
 
-## Docker Deployment
+### Python API
 
-The project includes Dockerfiles for CPU, GPU, and Jetson devices.
-```bash
-docker-compose up --build
+```python
+from src.core.pipeline import RestorationPipeline
+
+pipeline = RestorationPipeline()
+result = pipeline.process_image(
+    "images/input/hazy_photo.jpg",
+    save_path="output/restored.png",
+    reference_path="images/reference/clean.png"  # optional
+)
+
+print(f"Detected: {result['plan']}")       # ['haze']
+print(f"PSNR: {result['metrics']['psnr']:.2f} dB")  # 38.31 dB
+print(f"Time: {result['latency_ms']:.0f} ms")       # 840 ms
 ```
 
-## Documentation
-- [Architecture Guide](docs/architecture.md)
-- [Deployment Guide](docs/deployment.md)
-- [Developer Guide](docs/developer.md)
+---
+
+## Architecture
+
+```
+Input Image
+    |
+    v
+[Degradation Detectors]  ── MobileNetV2 CNN Classifier (Default)
+    |                     ── Heuristic Detectors (Fallback: DCP, LAB, Morphological)
+    v
+[Router]  ── Compares scores against thresholds
+    |     ── Mutual-exclusion filtering (resolves haze vs rain conflicts)
+    |     ── Builds execution plan: e.g., ["haze"]
+    v
+[Model Pipeline]  ── Sequentially applies needed models
+    |             ── DehazeFormer (2.5M params, 9.6 MB)
+    |             ── Restormer (26.1M params, 99.7 MB)
+    |             ── RetinexFormer (1.6M params, 6.2 MB)
+    v
+Restored Image + Quality Metrics
+```
+
+---
+
+## Configuration
+
+### `configs/config.yaml`
+
+```yaml
+pipeline:
+  device: "cuda"           # cuda, cpu, or mps
+  precision: "fp32"        # fp32, fp16, or bf16
+  compile_models: false    # Enable torch.compile
+  self_ensemble: false     # 8x TTA (slower but +0.1-0.5 dB PSNR)
+  lowlight_denoise: false  # Skip Restormer denoising after RetinexFormer (improves PSNR)
+
+router:
+  haze_threshold: 0.45     # Detection threshold for haze
+  lowlight_threshold: 0.50  # Detection threshold for low-light
+  rain_threshold: 0.45     # Detection threshold for rain
+  execution_order: ["lowlight", "rain", "haze"]
+  detector_type: "learned" # "learned" (MobileNetV2 CNN) or "heuristic" (classical CV)
+```
+
+---
+
+## Testing
+
+```bash
+# Run all tests
+python -m pytest tests/ -v
+```
+
+---
+
+## License
+
+This project uses publicly available pre-trained models. Please refer to the original repositories for their respective licenses.

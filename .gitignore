@@ -1,8 +1,10 @@
-﻿# Python
+# Python
 __pycache__/
 *.py[cod]
-*.class
-*.so
+*.pyo
+*.egg-info/
+dist/
+build/
 
 # Environment
 .env
@@ -10,14 +12,40 @@ __pycache__/
 env/
 venv/
 ENV/
-env.bak/
-venv.bak/
 
-# Project specifics
+# Model weights (download separately)
 weights/
 *.pth
 *.pt
+
+# Datasets and test images
+images/*
+!images/.gitkeep
+
+# Temporary files
 temp_*.jpg
 temp_*.png
-logs/
+
+# Logs and outputs (generated during pipeline runs)
+logs/*
+!logs/.gitkeep
+output/*
+!output/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Jupyter
 .ipynb_checkpoints/
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
+
+# OS
+Thumbs.db
+.DS_Store
