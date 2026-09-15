@@ -177,6 +177,17 @@ python -m pytest tests/ -v
 
 ---
 
+## Documentation & Guides
+
+Comprehensive technical documentation is available within the repository:
+
+- [**`MASTER_THEORY_AND_ARCHITECTURE.md`**](file:///d:/image_drdo/MASTER_THEORY_AND_ARCHITECTURE.md): Complete mathematical formulation, physical degradation equations, deep learning layer architectures, attention mechanisms, loss functions, and benchmark statistics.
+- [**`PROJECT_GUIDE.md`**](file:///d:/image_drdo/PROJECT_GUIDE.md): End-to-end technical guide covering codebase structure, configuration validation, and resolved issues.
+- [**`CLI_COMMANDS_GUIDE.md`**](file:///d:/image_drdo/CLI_COMMANDS_GUIDE.md): Complete command-line cheat sheet for single image restoration, batch directory processing, benchmarking, and unit testing.
+
+---
+
 ## License
 
 This project uses publicly available pre-trained models. Please refer to the original repositories for their respective licenses.
+
