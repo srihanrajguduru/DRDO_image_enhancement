@@ -33,29 +33,82 @@ The system uses a trained lightweight MobileNetV2 CNN classifier (or classical C
 ## Installation
 
 ### Prerequisites
-- Python 3.11+
+- Python 3.11 or newer
+- Git and Git LFS (required to download the included datasets and model checkpoints)
 - NVIDIA GPU with CUDA 12.1+ (recommended) or CPU
-- ~1 GB disk space for model weights
+- At least 2 GB free disk space for the included datasets and model weights
 
-### Setup
+### Setup on Windows (PowerShell)
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/srihanrajguduru/Image_enhancement_project.git
-cd Image_enhancement_project
+# 1. Install Git LFS once, if it is not already installed
+git lfs install
 
-# 2. Create a Conda environment
-conda create --prefix ./env python=3.11 -y
-conda activate ./env
+# 2. Clone the repository (this downloads the LFS-managed images and weights)
+git clone https://github.com/srihanrajguduru/DRDO_image_enhancement.git
+cd DRDO_image_enhancement
 
-# 3. Install CUDA-enabled PyTorch
+# 3. Create and activate a Python 3.11 virtual environment
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+# 4. Upgrade packaging tools
+python -m pip install --upgrade pip setuptools wheel
+
+# 5. Install CUDA-enabled PyTorch (NVIDIA GPU)
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
-# 4. Install project dependencies
+# 6. Install project dependencies
 pip install -r requirements.txt
+
+# 7. Install development and testing dependencies (optional)
+pip install -r requirements-dev.txt
 ```
 
-> **PowerShell users**: If `conda activate ./env` fails, use `.\env\python.exe` directly.
+If you do not have an NVIDIA GPU, replace step 5 with:
+
+```powershell
+python -m pip install torch torchvision torchaudio
+```
+
+If PowerShell blocks activation, run this once in PowerShell as an administrator:
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+### Setup on Linux or macOS
+
+```bash
+# 1. Install Git LFS once, if it is not already installed
+git lfs install
+
+# 2. Clone the repository
+git clone https://github.com/srihanrajguduru/DRDO_image_enhancement.git
+cd DRDO_image_enhancement
+
+# 3. Create and activate a Python 3.11 virtual environment
+python3.11 -m venv .venv
+source .venv/bin/activate
+
+# 4. Upgrade packaging tools and install dependencies
+python -m pip install --upgrade pip setuptools wheel
+python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt  # optional
+```
+
+The repository contains the dataset files in `images/` and model checkpoints in
+`weights/`. They are stored with Git LFS, so run `git lfs pull` from the repository
+root if a clone contains LFS pointer files instead of the actual files:
+
+```bash
+git lfs pull
+```
+
+The local environment directory (`.venv/`, `env/`) is intentionally not committed.
+Always recreate it with the commands above so the environment is portable and
+reproducible.
 
 ### Download Model Weights
 
@@ -190,4 +243,3 @@ Comprehensive technical documentation is available within the repository:
 ## License
 
 This project uses publicly available pre-trained models. Please refer to the original repositories for their respective licenses.
-

@@ -13,12 +13,11 @@ env/
 venv/
 ENV/
 
-# Model weights (download separately)
-weights/
+# Model weights are tracked with Git LFS.
 *.pth
 *.pt
 
-# Datasets and test images
+# Datasets and test images are tracked with Git LFS.
 images/*
 !images/.gitkeep
 
