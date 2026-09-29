@@ -13,14 +13,6 @@ env/
 venv/
 ENV/
 
-# Model weights are tracked with Git LFS.
-*.pth
-*.pt
-
-# Datasets and test images are tracked with Git LFS.
-images/*
-!images/.gitkeep
-
 # Temporary files
 temp_*.jpg
 temp_*.png

@@ -110,9 +110,11 @@ The local environment directory (`.venv/`, `env/`) is intentionally not committe
 Always recreate it with the commands above so the environment is portable and
 reproducible.
 
-### Download Model Weights
+### Model Weights
 
-Place pre-trained checkpoints in the `weights/` directory:
+The pre-trained checkpoints are included in the `weights/` directory and downloaded
+through Git LFS. If you intentionally clone without LFS, download the checkpoints
+from the sources below and place them in `weights/`:
 
 | Weight File | Model | Size | Download / Source |
 |-------------|-------|------|-------------------|
